@@ -262,7 +262,7 @@ export default class ReactGridLayout extends React.Component<Props, State> {
    */
   onDrag(i:string, x:number, y:number, {e, node}: GridDragEvent) {
     const {oldDragItem} = this.state;
-    let {layout} = this.state;
+    let {layout, oldLayout} = this.state;
     var l = getLayoutItem(layout, i);
     if (!l) return;
 
@@ -272,7 +272,7 @@ export default class ReactGridLayout extends React.Component<Props, State> {
     };
 
     // Move the element to the dragged location.
-    layout = moveElement(layout, l, x, y, true /* isUserAction */);
+    layout = moveElement(layout, l, x, y, true /* isUserAction */, oldDragItem, oldLayout);
 
     this.props.onDrag(layout, oldDragItem, l, placeholder, e, node);
 
@@ -292,18 +292,18 @@ export default class ReactGridLayout extends React.Component<Props, State> {
    */
   onDragStop(i:string, x:number, y:number, {e, node}: GridDragEvent) {
     const {oldDragItem} = this.state;
-    let {layout} = this.state;
+    let {layout, oldLayout} = this.state;
     const l = getLayoutItem(layout, i);
     if (!l) return;
 
     // Move the element here
-    layout = moveElement(layout, l, x, y, true /* isUserAction */);
+    layout = moveElement(layout, l, x, y, true /* isUserAction */, oldDragItem, oldLayout);
 
     this.props.onDragStop(layout, oldDragItem, l, null, e, node);
 
     // Set state
     const newLayout = compact(layout, this.props.verticalCompact);
-    const {oldLayout} = this.state;
+    
     this.setState({
       activeDrag: null,
       layout: newLayout,
