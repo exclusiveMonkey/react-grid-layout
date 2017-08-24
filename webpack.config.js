@@ -1,5 +1,5 @@
 var webpack = require("webpack");
-//testesr
+
 // Builds bundle usable <script>. Includes RGL and all deps, excluding React.
 module.exports = {
   context: __dirname,
