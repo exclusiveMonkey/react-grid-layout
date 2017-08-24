@@ -301,7 +301,7 @@ function moveElement(layout, l, x, y, isUserAction, oldDragItem, oldLayout) {
 
   var sorted = sortLayoutItemsByRowCol(resultLayout);
   if (movingUp) sorted = sorted.reverse();
-  var collisions = getAllCollisions(sorted, l);
+  // const collisions = getAllCollisions(sorted, l);
 
   // Move each item that collides away from this element.
   // for (let i = 0, len = collisions.length; i < len; i++) {
@@ -322,7 +322,7 @@ function moveElement(layout, l, x, y, isUserAction, oldDragItem, oldLayout) {
   //   }
   // }
 
-  return layout;
+  return sorted;
 }
 
 /**
