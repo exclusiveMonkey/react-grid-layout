@@ -247,7 +247,7 @@ export function moveElement(layout: Layout, l: LayoutItem, x: ?number, y: ?numbe
   //exchange order of layoutItem
   let oldPos = 0;
   let newPos = 0;
-  let resultLayout = [];
+  let newLayout = [];
   if (oldLayout && oldDragItem) {
     for ( let i = 0; i < oldLayout.length; i ++ ) {
       if ( oldLayout[i].x === x && oldLayout[i].y === y) {
@@ -262,25 +262,33 @@ export function moveElement(layout: Layout, l: LayoutItem, x: ?number, y: ?numbe
     oldLayout.splice(newPos, 0, oldDragItem);
   
     //regenerate the coordinates
-    let indexArray = [];
-    const len = oldLayout.length;
-  
-    for ( let i = 0; i < len; i += 2 ) {
-      indexArray.push(oldLayout.slice(i, i + 2));
-    }
+    let breakPointArr = [];
+    let current_y = 0;
+    let m = 0;
     
-    for ( let k = 0; k < indexArray.length; k ++ ) {
-      for ( let j = 0; j < indexArray[k].length; j ++ ) {
-        indexArray[k][j].x = j;
-        indexArray[k][j].y = k;
-        resultLayout.push(indexArray[k][j]);
+    for ( let i = 0; i < oldLayout.length; i ++ ) {
+      if ( oldLayout[i].w > 1 ) {
+        breakPointArr.push(i); //根据被放大的图表，生成将layout切割的索引数组
       }
     }
-  } else {
-    resultLayout = layout;
+
+    for ( let i = 0; i < oldLayout.length; i ++ ) {
+      if ( breakPointArr.length > 0 && i === breakPointArr[0] ) {
+        let len = Math.floor((i - m) / 2) + ((i - m) % 2 === 0 ? 0 : 1);
+        oldLayout[i].x = 0;
+        oldLayout[i].y = current_y + len;
+        newLayout = newLayout.concat(generateCoor(oldLayout, m, i, current_y)).concat([oldLayout[i]]);
+        m = breakPointArr.shift() + 1;
+        current_y += len + 1;
+      } else if ( breakPointArr.length === 0 && i === m ) {
+        newLayout = newLayout.concat(generateCoor(oldLayout, m, oldLayout.length, current_y));
+      }
+    }
+  }else{
+    newLayout = layout;
   }
   
-  let sorted = sortLayoutItemsByRowCol(resultLayout);
+  let sorted = sortLayoutItemsByRowCol(newLayout);
   if (movingUp) sorted = sorted.reverse();
   // const collisions = getAllCollisions(sorted, l);
 
@@ -304,6 +312,32 @@ export function moveElement(layout: Layout, l: LayoutItem, x: ?number, y: ?numbe
   // }
 
   return sorted;
+}
+/**
+ * regenerate the coordinates of sub array.
+ *
+ * @param  {Array}      layout Full layout to modify.
+ * @param  {LayoutItem} start  start position.
+ * @param  {Number}     end    end position.
+ * @param  {Number}     current_y    Y position in grid units.
+ */
+function generateCoor (layout, start, end, current_y) {
+  let subArr = layout.slice(start, end);
+  let indexArray = [];
+  let newSubLayout = [];
+  
+  for (let j = 0; j < subArr.length; j += 2 ) {
+      indexArray.push(subArr.slice(j, j + 2));    //根据项目需求，一行有2个图表，两两一组生成坐标
+  }
+
+  for ( let k = 0; k < indexArray.length; k ++ ) {
+      for ( let j = 0; j < indexArray[k].length; j ++ ) {
+          indexArray[k][j].x = j;   //x坐标不需要累计，每次从0开始生成
+          indexArray[k][j].y = current_y + k;   //y坐标需要累计
+          newSubLayout.push(indexArray[k][j]);
+      }
+  }
+  return newSubLayout;
 }
 
 /**

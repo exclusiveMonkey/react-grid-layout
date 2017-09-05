@@ -266,7 +266,7 @@ function moveElement(layout, l, x, y, isUserAction, oldDragItem, oldLayout) {
   //exchange order of layoutItem
   var oldPos = 0;
   var newPos = 0;
-  var resultLayout = [];
+  var newLayout = [];
   if (oldLayout && oldDragItem) {
     for (var _i7 = 0; _i7 < oldLayout.length; _i7++) {
       if (oldLayout[_i7].x === x && oldLayout[_i7].y === y) {
@@ -281,25 +281,33 @@ function moveElement(layout, l, x, y, isUserAction, oldDragItem, oldLayout) {
     oldLayout.splice(newPos, 0, oldDragItem);
 
     //regenerate the coordinates
-    var indexArray = [];
-    var len = oldLayout.length;
+    var breakPointArr = [];
+    var current_y = 0;
+    var m = 0;
 
-    for (var _i8 = 0; _i8 < len; _i8 += 2) {
-      indexArray.push(oldLayout.slice(_i8, _i8 + 2));
+    for (var _i8 = 0; _i8 < oldLayout.length; _i8++) {
+      if (oldLayout[_i8].w > 1) {
+        breakPointArr.push(_i8); //根据被放大的图表，生成将layout切割的索引数组
+      }
     }
 
-    for (var k = 0; k < indexArray.length; k++) {
-      for (var j = 0; j < indexArray[k].length; j++) {
-        indexArray[k][j].x = j;
-        indexArray[k][j].y = k;
-        resultLayout.push(indexArray[k][j]);
+    for (var _i9 = 0; _i9 < oldLayout.length; _i9++) {
+      if (breakPointArr.length > 0 && _i9 === breakPointArr[0]) {
+        var len = Math.floor((_i9 - m) / 2) + ((_i9 - m) % 2 === 0 ? 0 : 1);
+        oldLayout[_i9].x = 0;
+        oldLayout[_i9].y = current_y + len;
+        newLayout = newLayout.concat(generateCoor(oldLayout, m, _i9, current_y)).concat([oldLayout[_i9]]);
+        m = breakPointArr.shift() + 1;
+        current_y += len + 1;
+      } else if (breakPointArr.length === 0 && _i9 === m) {
+        newLayout = newLayout.concat(generateCoor(oldLayout, m, oldLayout.length, current_y));
       }
     }
   } else {
-    resultLayout = layout;
+    newLayout = layout;
   }
 
-  var sorted = sortLayoutItemsByRowCol(resultLayout);
+  var sorted = sortLayoutItemsByRowCol(newLayout);
   if (movingUp) sorted = sorted.reverse();
   // const collisions = getAllCollisions(sorted, l);
 
@@ -323,6 +331,32 @@ function moveElement(layout, l, x, y, isUserAction, oldDragItem, oldLayout) {
   // }
 
   return sorted;
+}
+/**
+ * regenerate the coordinates of sub array.
+ *
+ * @param  {Array}      layout Full layout to modify.
+ * @param  {LayoutItem} start  start position.
+ * @param  {Number}     end    end position.
+ * @param  {Number}     current_y    Y position in grid units.
+ */
+function generateCoor(layout, start, end, current_y) {
+  var subArr = layout.slice(start, end);
+  var indexArray = [];
+  var newSubLayout = [];
+
+  for (var j = 0; j < subArr.length; j += 2) {
+    indexArray.push(subArr.slice(j, j + 2)); //根据项目需求，一行有2个图表，两两一组生成坐标
+  }
+
+  for (var k = 0; k < indexArray.length; k++) {
+    for (var _j = 0; _j < indexArray[k].length; _j++) {
+      indexArray[k][_j].x = _j; //x坐标不需要累计，每次从0开始生成
+      indexArray[k][_j].y = current_y + k; //y坐标需要累计
+      newSubLayout.push(indexArray[k][_j]);
+    }
+  }
+  return newSubLayout;
 }
 
 /**
@@ -481,18 +515,18 @@ function validateLayout(layout, contextName) {
   contextName = contextName || "Layout";
   var subProps = ['x', 'y', 'w', 'h'];
   if (!Array.isArray(layout)) throw new Error(contextName + " must be an array!");
-  for (var _i9 = 0, len = layout.length; _i9 < len; _i9++) {
-    var item = layout[_i9];
+  for (var _i10 = 0, len = layout.length; _i10 < len; _i10++) {
+    var item = layout[_i10];
     for (var j = 0; j < subProps.length; j++) {
       if (typeof item[subProps[j]] !== 'number') {
-        throw new Error('ReactGridLayout: ' + contextName + '[' + _i9 + '].' + subProps[j] + ' must be a number!');
+        throw new Error('ReactGridLayout: ' + contextName + '[' + _i10 + '].' + subProps[j] + ' must be a number!');
       }
     }
     if (item.i && typeof item.i !== 'string') {
-      throw new Error('ReactGridLayout: ' + contextName + '[' + _i9 + '].i must be a string!');
+      throw new Error('ReactGridLayout: ' + contextName + '[' + _i10 + '].i must be a string!');
     }
     if (item.static !== undefined && typeof item.static !== 'boolean') {
-      throw new Error('ReactGridLayout: ' + contextName + '[' + _i9 + '].static must be a boolean!');
+      throw new Error('ReactGridLayout: ' + contextName + '[' + _i10 + '].static must be a boolean!');
     }
   }
 }
